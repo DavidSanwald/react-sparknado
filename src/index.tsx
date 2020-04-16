@@ -27,9 +27,11 @@ export type Props = {
   padding?: number;
   gradient?: string[];
   drawDuration?: number;
+  strokeWidth?: number;
 };
 
 const gradientId = 'myGradientId';
+
 const Spark = ({
   // children,
   // width,
@@ -43,6 +45,8 @@ const Spark = ({
   stroke = 'black',
   padding = 8,
   drawDuration = 2,
+  strokeWidth = 1,
+  ...props
 }: Props) => {
   const viewBoxWidth = width || 300;
   const viewBoxHeight = height || 75;
@@ -93,11 +97,14 @@ const Spark = ({
             fill: 'none',
           }}
           css={css`
+            fill: none;
+            stroke-width: ${strokeWidth};
             stroke: ${gradient ? `url(#${gradientId})` : stroke};
             stroke-dasharray: 1;
             stroke-dashoffset: 1;
             animation: ${draw} ${drawDuration}s ease infinite;
           `}
+          {...props}
         />
       )}
     </svg>

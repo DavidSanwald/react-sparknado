@@ -1,6 +1,7 @@
 import React from 'react';
 import { Spark, Props } from '../src';
 import {
+  color,
   withKnobs,
   text,
   boolean,
@@ -16,9 +17,12 @@ export default {
   decorators: [withKnobs],
 };
 
-// By passing optional props to this story, you can control the props of the component when
-// you consume the story in a test.
 export const MyStory = (props: Partial<Props>) => {
-  const data = object('data', [0, 10, 5, 22, 3.6, 11]);
-  return <Spark data={data} gradient={['#0FF', '#F0F', '#FF0']} />;
+  const data = object('data', [0, 10, 5, 22, 3.6, 11], 'data');
+  const color1 = color('start','#0FF' , 'gradient');
+  const color2 = color('middle', '#F0F', 'gradient');
+  const color3 = color('stop','#FF0', 'gradient');
+  const strokeWidth = number('stroke-width', 1);
+
+  return <Spark data={data} strokeWidth={strokeWidth} gradient={[color1,color2,color3]} />;
 };
