@@ -1,17 +1,9 @@
 /** @jsx jsx */
 import React from 'react';
-import { line, curveCatmullRom } from 'd3-shape';
+import CSS from 'csstype';
+import { line, area, curveCatmullRomOpen } from 'd3-shape';
 import { scaleLinear } from 'd3-scale';
 import { jsx, css, keyframes } from '@emotion/core';
-
-const draw = keyframes`
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}`;
 
 function getRange(arr: number[]) {
   const min = arr.reduce((acc, curr) => Math.min(acc, curr), Infinity);
@@ -23,29 +15,41 @@ export type Props = {
   data: any;
   height?: number;
   width?: number;
-  stroke?: string;
+  style?: CSS.Properties;
   padding?: number;
   gradient?: string[];
   drawDuration?: number;
-  strokeWidth?: number;
+  curve?: number;
+  className?: string;
+  kind?: 'area' | 'line';
 };
 
 const gradientId = 'myGradientId';
 
+const builtDefaultStyles = ({ drawDuration = 1 } = {}) => {
+  const draw = keyframes`
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}`;
+  return css`
+    animation: ${draw} ${drawDuration}s ease infinite;
+  `;
+};
+
 const Spark = ({
-  // children,
-  // width,
-  // height,
-  // viewBoxWidth,
-  // viewBoxHeight,
+  style,
   gradient,
   width,
   height,
   data,
-  stroke = 'black',
+  curve = 0.5,
   padding = 8,
   drawDuration = 2,
-  strokeWidth = 1,
+  kind = 'line',
   ...props
 }: Props) => {
   const viewBoxWidth = width || 300;
@@ -58,14 +62,20 @@ const Spark = ({
   const yScale = scaleLinear()
     .domain([0, getRange(data)[1]])
     .range([viewBoxHeight - padding, 0 + padding]);
-  const lineGen = line<number>()
-    .x((_, i) => xScale(i))
-    .y(d => yScale(d))
-    .curve(curveCatmullRom.alpha(0.5));
+  const shapeGen = React.useMemo(() => {
+    return kind === 'line'
+      ? line<number>()
+          .x((_, i) => xScale(i))
+          .y(d => yScale(d))
+      : area<number>()
+          .x((_, i) => xScale(i))
+          .y0(viewBoxHeight - padding)
+          .y1(d => yScale(d))
+          .curve(curveCatmullRomOpen.alpha(curve));
+  }, []);
   const result = React.useMemo(() => {
-    return lineGen(data);
-  }, [data]);
-  console.log(stroke);
+    return shapeGen(data);
+  }, [data, shapeGen]);
   return (
     <svg
       width={svgWidth}
@@ -83,6 +93,7 @@ const Spark = ({
                   key={i}
                   offset={i / (gradient.length - 1)}
                   stopColor={c}
+                  stopOpacity={1 - (i / gradient.length) * 2}
                 />
               ))}
           </linearGradient>
@@ -93,16 +104,13 @@ const Spark = ({
         <path
           d={result}
           pathLength="1"
-          style={{
-            fill: 'none',
-          }}
+          style={{ ...style }}
           css={css`
+            ${builtDefaultStyles()};
             fill: none;
-            stroke-width: ${strokeWidth};
-            stroke: ${gradient ? `url(#${gradientId})` : stroke};
             stroke-dasharray: 1;
             stroke-dashoffset: 1;
-            animation: ${draw} ${drawDuration}s ease infinite;
+            fill: ${gradient ? `url(#${gradientId})` : '1px'};
           `}
           {...props}
         />
